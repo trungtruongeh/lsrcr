@@ -1,6 +1,7 @@
 var MY_EMAIL = '';
 var SLACK_WEBHOOK = '';
-var GITHUB_AUTH_TOKEN = '';
+var currentUrl = '';
+var currentTitle = '';
 
 function displayError(msg) {
   let errorP = document.getElementById('error');
@@ -19,7 +20,6 @@ function displayError(msg) {
 async function sendMessageViaWorkflow({
   title,
   url,
-  author,
 }) {
   return await fetch(SLACK_WEBHOOK, {
     method: 'post',
@@ -29,9 +29,9 @@ async function sendMessageViaWorkflow({
     body: JSON.stringify({
       title,
       url,
-      github_name: author.name,
-      github_avatar: author.avatar,
-      github_href: author.href,
+      // github_name: author.name,
+      // github_avatar: author.avatar,
+      // github_href: author.href,
       email: MY_EMAIL,
     }),
   })
@@ -63,30 +63,26 @@ async function parsePrInfo(prUrl) {
     return null;
   }
 
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}`;
+  // const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}`;
+  //
+  // const res = await axios.get(apiUrl, {
+  //   headers: {
+  //     'Authorization': `Bearer ${GITHUB_AUTH_TOKEN}`
+  //   }
+  // });
+  //
+  // console.log(res.data);
 
-  const res = await axios.get(apiUrl, {
-    headers: {
-      'Authorization': `Bearer ${GITHUB_AUTH_TOKEN}`
-    }
-  });
-
-  console.log(res.data);
-
-  if (res.data.title) {
-    return {
-      url: prUrl,
-      title: res.data.title,
-      author: {
-        name: res.data.user.login,
-        href: res.data.user.html_url,
-        avatar: res.data.user.avatar_url,
-      },
-      codeowners: [...res.data.requested_reviewers, ...res.data.requested_teams],
-    };
-  }
-
-  return null;
+  return {
+    url: prUrl,
+    title: currentTitle,
+    // author: {
+    //   name: res.data.user.login,
+    //   href: res.data.user.html_url,
+    //   avatar: res.data.user.avatar_url,
+    // },
+    // codeowners: [...res.data.requested_reviewers, ...res.data.requested_teams],
+  };
 }
 
 async function appendInputToPreview(value, id) {
@@ -151,19 +147,15 @@ async function previewMessage(event) {
 window.onload = async (e) => {
   e.preventDefault();
 
-  chrome.storage.local.get(['github-token', 'slack-webhook', 'my-email'], function(result) {
-    GITHUB_AUTH_TOKEN = result['github-token'];
+  chrome.storage.local.get(['slack-webhook', 'my-email'], function(result) {
     SLACK_WEBHOOK = result['slack-webhook'];
     MY_EMAIL = result['my-email'];
-
-    console.log(result);
-
-    console.log(GITHUB_AUTH_TOKEN);
 
     if (chrome.tabs) {
       chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
         var currentTab = tabs[0];
         currentUrl = currentTab.url;
+        currentTitle = currentTab.title.split(' · ')[0];
         previewMessage();
       });
     } else {
