@@ -1,6 +1,6 @@
-const MY_EMAIL = 'trung.truong@employmenthero.com';
-const SLACK_WEBHOOK = 'YOUR_SLACK_WEBHOOK';
-const GITHUB_AUTH_TOKEN = 'YOUR_GITHUB_AUTH_TOKEN';
+var MY_EMAIL = '';
+var SLACK_WEBHOOK = '';
+var GITHUB_AUTH_TOKEN = '';
 
 function displayError(msg) {
   let errorP = document.getElementById('error');
@@ -132,9 +132,9 @@ async function previewMessage(event) {
 
   appendInputToPreview(prInfo.title, 'title');
   appendInputToPreview(prInfo.url, 'url');
-  appendInputToPreview(prInfo.author.name, 'author-name');
-  appendInputToPreview(prInfo.author.href, 'author-href');
-  appendInputToPreview(prInfo.author.avatar, 'author-avatar');
+  // appendInputToPreview(prInfo.author.name, 'author-name');
+  // appendInputToPreview(prInfo.author.href, 'author-href');
+  // appendInputToPreview(prInfo.author.avatar, 'author-avatar');
   appendInputToPreview(MY_EMAIL, 'my-email');
 
   const sendButton = document.createElement('button');
@@ -148,18 +148,33 @@ async function previewMessage(event) {
   previewDiv.appendChild(sendButton);
 }
 
-window.onload = (e) => {
+window.onload = async (e) => {
   e.preventDefault();
 
-  if (chrome.tabs) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-      var currentTab = tabs[0];
-      currentUrl = currentTab.url;
+  chrome.storage.local.get(['github-token', 'slack-webhook', 'my-email'], function(result) {
+    GITHUB_AUTH_TOKEN = result['github-token'];
+    SLACK_WEBHOOK = result['slack-webhook'];
+    MY_EMAIL = result['my-email'];
+
+    console.log(result);
+
+    console.log(GITHUB_AUTH_TOKEN);
+
+    if (chrome.tabs) {
+      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        var currentTab = tabs[0];
+        currentUrl = currentTab.url;
+        previewMessage();
+      });
+    } else {
+      currentUrl = window.location.href;
       previewMessage();
-    });
-  } else {
-    currentUrl = window.location.href;
-    previewMessage();
-  }
+    }
+  });
+
+  document.getElementById('openOptionsPageButton').addEventListener('click', function() {
+    chrome.runtime.openOptionsPage();
+  });
+
 };
 
